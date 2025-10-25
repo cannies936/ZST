@@ -9,6 +9,8 @@ from typing import Optional
 from collections import defaultdict, deque
 import time
 
+token = ""
+
 # Discordボット設定
 intents = discord.Intents.default()
 intents.message_content = True
@@ -22,4 +24,6 @@ async def on_ready():
         print(f'{bot.user} としてログインしました！')
         print(f'Bot ID: {bot.user.id}')
         print('ボットが準備完了です！')
-        await bot.change_presence(status=discord.Status.online, activity=discord.Game('https://cannies936.com/Cannies'))
+        await bot.change_presence(status=discord.Status.online, activity=discord.Game(''))
+
+bot.run(token)
