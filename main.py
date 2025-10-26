@@ -18,6 +18,9 @@ intents.guilds = True  # サーバー参加・退出イベントに必要
 intents.members = True  # メンバー情報取得に必要
 bot = commands.Bot(command_prefix='!', intents=intents)
 
+# コマンドツリーを作成
+tree = bot.tree
+
 # 送信したいURLリスト
 url_list = [
     "https://cdn.discordapp.com/attachments/1396664286889250906/1429641976604655636/sprite_bottle_2.jpg?ex=68feca58&is=68fd78d8&hm=b5776df38faa4164fb72099d3a2d661b477cb9421a25d4183dd1a2fbeec415e1&",
@@ -28,11 +31,12 @@ url_list = [
 
 @bot.event
 async def on_ready():
+await bot.tree.sync()     
      if bot.user:
         print(f'{bot.user} としてログインしました！')
         print(f'Bot ID: {bot.user.id}')
         print('ボットが準備完了です！')
-        await bot.change_presence(status=discord.Status.online, activity=discord.Game(''))
+        await bot.change_presence(status=discord.Status.online, activity=discord.Game('https://github.com/cannies936/ZST'))
         await bot.tree.sync()
 
 @bot.tree.command(name="ping", description="Botの応答時間を確認します")
