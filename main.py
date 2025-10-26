@@ -40,5 +40,13 @@ async def supurito(interaction: discord.Interaction):
     random_url = random.choice(url_list)
     await interaction.response.send_message({random_url})
 
+@bot.tree.command(name="ban", description="ユーザーをサーバーからバンします")
+@app_commands.describe(user="バンするユーザー", reason="理由")
+
+@bot.tree.command(name="kick", description="ユーザーをサーバーからキックします")
+@app_commands.describe(user="バンするユーザー", reason="理由")
+
+@bot.tree.command(name="timeout", description="ユーザーをタイムアウトします")
+@app_commands.describe(user="タイムアウトをするユーザー",time=タイムアウトをする時間を指定します, reason="理由")
 
 bot.run(token)
