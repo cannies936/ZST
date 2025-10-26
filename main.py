@@ -9,14 +9,14 @@ from typing import Optional
 from collections import defaultdict, deque
 import time
 
-token = ""
+token = "YOUR_BOT_TOKEN"
 
 # Discordボット設定
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True  # サーバー参加・退出イベントに必要
 intents.members = True  # メンバー情報取得に必要
-bot = commands.Bot(command_prefix='/', intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 @bot.event
 async def on_ready():
@@ -25,5 +25,7 @@ async def on_ready():
         print(f'Bot ID: {bot.user.id}')
         print('ボットが準備完了です！')
         await bot.change_presence(status=discord.Status.online, activity=discord.Game(''))
+        await bot.tree.sync()
+
 
 bot.run(token)
