@@ -35,6 +35,10 @@ async def on_ready():
         await bot.change_presence(status=discord.Status.online, activity=discord.Game(''))
         await bot.tree.sync()
 
-@bot.tree.command
+@bot.tree.command(name="supurito", description="ランダムなスプライト画像を表示します")
+async def supurito(interaction: discord.Interaction):
+    random_url = random.choice(url_list)
+    await interaction.response.send_message({random_url})
+
 
 bot.run(token)
