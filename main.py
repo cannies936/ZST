@@ -50,13 +50,113 @@ async def supurito(interaction: discord.Interaction):
     await interaction.response.send_message({random_url})
 
 @bot.tree.command(name="ban", description="ユーザーをサーバーからバンします")
-@app_commands.describe(user="バンするユーザー", reason="理由")
+@app_commands.describe(user="バンするユーザー(IDも含む)", reason="理由")
+async def ban(interaction: discord.Interaction, user: str, reason: str = "理由なし"):
+    guild = interaction.guild
+
+    if not guild:
+        await interaction.response.send_message("❌ このコマンドはサーバー内でのみ使用できます。", ephemeral=True)
+        return
+
+    if not interaction.user.guild_permissions.ban_members:
+        await interaction.response.send_message("🚫 あなたにはBAN権限がありません。", ephemeral=True)
+        return
+
+    target = None
+    display_name = ""
+    try:
+        # --- メンション形式の場合 ---
+        if user.startswith("<@") and user.endswith(">"):
+            user_id = int(user.replace("<@", "").replace(">", "").replace("!", ""))
+        else:
+            # ID指定
+            user_id = int(user)
+
+        # サーバー内メンバーを優先して取得
+        target = guild.get_member(user_id)
+        if target:
+            display_name = str(target)
+        else:
+            # サーバー外ユーザーの場合、Userオブジェクトを取得
+            try:
+                target = await bot.fetch_user(user_id)
+                display_name = f"{target} (ID: {target.id})"
+            except discord.NotFound:
+                # 存在しないID
+                target = discord.Object(id=user_id)
+                setattr(target, "_display_name", f"Unknown User ({user_id})")
+                display_name = getattr(target, "_display_name")
+
+        # --- BAN実行 ---
+        await guild.ban(target, reason=reason, delete_message_seconds=0)
+        await interaction.response.send_message(f"🔨 {display_name} をサーバーからBANしました。\n理由: {reason}")
+
+    except ValueError:
+        await interaction.response.send_message("❌ 無効なユーザー指定です。メンションまたは数値IDを指定してください。", ephemeral=True)
+    except discord.Forbidden:
+        await interaction.response.send_message("⚠️ 権限不足でBANできませんでした。", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ エラー: {e}", ephemeral=True)
+
+@bot.tree.command(name="unban", description="ユーザーのBANを解除します（メンションまたはID指定）")
+@app_commands.describe(
+    user="アンバンするユーザー（ユーザーIDも含む）"
+)
+async def unban(interaction: discord.Interaction, user: str):
+    guild = interaction.guild
+
+    if not guild:
+        await interaction.response.send_message("❌ このコマンドはサーバー内でのみ使用できます。", ephemeral=True)
+        return
+
+    if not interaction.user.guild_permissions.ban_members:
+        await interaction.response.send_message("🚫 あなたにはBAN解除権限がありません。", ephemeral=True)
+        return
+
+    target_id = None
+    display_name = ""
+    try:
+        # --- メンション形式 ---
+        if user.startswith("<@") and user.endswith(">"):
+            target_id = int(user.replace("<@", "").replace(">", "").replace("!", ""))
+        else:
+            # ID指定
+            target_id = int(user)
+
+        # バンリストを取得して確認
+        bans = await guild.bans()
+        ban_entry = discord.utils.find(lambda b: b.user.id == target_id, bans)
+        if not ban_entry:
+            await interaction.response.send_message(f"❌ ユーザーID `{target_id}` はBANされていません。", ephemeral=True)
+            return
+
+        # ユーザー情報を取得（表示用）
+        try:
+            target_user = await bot.fetch_user(target_id)
+            display_name = f"{target_user} (ID: {target_user.id})"
+        except discord.NotFound:
+            display_name = f"Unknown User ({target_id})"
+
+        # --- アンバン実行 ---
+        await guild.unban(discord.Object(id=target_id))
+        await interaction.response.send_message(f"🔓 {display_name} のBANを解除しました。")
+
+    except ValueError:
+        await interaction.response.send_message("❌ 無効なユーザー指定です。メンションまたは数値IDを指定してください。", ephemeral=True)
+    except discord.Forbidden:
+        await interaction.response.send_message("⚠️ 権限不足でBAN解除できませんでした。", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ エラー: {e}", ephemeral=True)
 
 @bot.tree.command(name="kick", description="ユーザーをサーバーからキックします")
 @app_commands.describe(user="バンするユーザー", reason="理由")
 
+
+
 @bot.tree.command(name="timeout", description="ユーザーをタイムアウトします")
 @app_commands.describe(user="タイムアウトをするユーザー",time=タイムアウトをする時間を指定します, reason="理由")
+
+
 
 @bot.tree.command(name="deleteinvite", description="招待作成時の自動削除をオン/オフします。")
 @app_commands.describe(state="true でオン、false でオフにします。")
