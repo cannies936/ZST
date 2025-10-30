@@ -14,8 +14,7 @@ import time
 intents = discord.Intents.default()
 intents.message_content = True  # メッセージ内容の取得を有効にする
 
-
-
+token = "YOUR_BOT_TOKEN"
 
 # Discordボット設定
 intents = discord.Intents.default()
