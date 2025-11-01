@@ -9,6 +9,7 @@ from discord import app_commands
 from typing import Optional
 from collections import defaultdict, deque
 import time
+import yt_dlp
 
 # --- インテント設定（必須） ---
 intents = discord.Intents.default()
