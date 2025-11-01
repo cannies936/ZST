@@ -1,0 +1,28 @@
+# 音楽キュー（サーバーごと）
+music_queue = {}
+
+def get_player(guild_id):
+    if guild_id not in music_queue:
+        music_queue[guild_id] = []
+    return music_queue[guild_id]
+
+async def play_next(interaction):
+    vc = interaction.guild.voice_client
+    queue = get_player(interaction.guild_id)
+
+    if not queue:
+        return
+
+    url = queue.pop(0)
+
+    ydl_opts = {
+        "format": "bestaudio",
+        "quiet": True
+    }
+
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+        audio_url = info["url"]
+
+    source = discord.FFmpegPCMAudio(audio_url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5")
+    vc.play(source, after=lambda e: bot.loop.create_task(play_next(interaction)))
