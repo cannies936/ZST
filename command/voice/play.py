@@ -1,4 +1,4 @@
-@bot.tree.command(name="play", description="YouTubeのURLまたは検索ワードを再生します。")
+@bot.tree.command(name="play", description="YouTubeのURLまたは検索ワードを再生します")
 async def play(interaction: discord.Interaction, query: str):
     await interaction.response.defer()
 
@@ -8,7 +8,7 @@ async def play(interaction: discord.Interaction, query: str):
         if interaction.user.voice:
             voice = await interaction.user.voice.channel.connect()
         else:
-            await interaction.followup.send("⚠ ボイスチャンネルに参加してから実行してください。")
+            await interaction.followup.send("⚠ ボイスチャンネルに参加してから実行してください")
             return
 
     queue = get_player(interaction.guild_id)
