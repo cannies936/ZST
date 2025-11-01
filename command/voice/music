@@ -9,11 +9,13 @@ def get_player(guild_id):
 async def play_next(interaction):
     vc = interaction.guild.voice_client
     queue = get_player(interaction.guild_id)
+    guild_id = interaction.guild_id
 
     if not queue:
         return
 
-    url = queue.pop(0)
+    # キューから曲を取る
+    url = queue[0]  # ループがONなら削除しない
 
     ydl_opts = {
         "format": "bestaudio",
@@ -25,4 +27,11 @@ async def play_next(interaction):
         audio_url = info["url"]
 
     source = discord.FFmpegPCMAudio(audio_url, before_options="-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5")
-    vc.play(source, after=lambda e: bot.loop.create_task(play_next(interaction)))
+    
+    # 再生終了時に次を再生
+    def after_play(e):
+        if not loop_enabled.get(guild_id, False):
+            queue.pop(0)  # ループOFFなら削除
+        bot.loop.create_task(play_next(interaction))
+
+    vc.play(source, after=after_play)
