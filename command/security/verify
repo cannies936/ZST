@@ -1,30 +1,76 @@
 from discord.ui import Button, View
+import random, string, json, os
 
-@bot.tree.command(name="verifysetup", description="認証用メッセージを作成します。")
-@app_commands.describe(role="認証後に付与するロール")
-async def verifysetup(interaction: discord.Interaction, role: discord.Role):
-    class VerifyButton(View):
-        def __init__(self):
-            super().__init__(timeout=None)
+CONFIG_FILE = "verify_config.json"
 
-        @discord.ui.button(label="✅ 認証する", style=discord.ButtonStyle.green)
-        async def verify(self, interaction_button: discord.Interaction, button: Button):
-            member = interaction_button.user
-            try:
-                await member.add_roles(role)
-                await interaction_button.response.send_message(
-                    f"✅ **{member.display_name}** さんを認証しました！", ephemeral=True
-                )
-            except discord.Forbidden:
-                await interaction_button.response.send_message(
-                    "⚠️ 権限不足でロールを付与できません。", ephemeral=True
-                )
+if os.path.exists(CONFIG_FILE):
+    with open(CONFIG_FILE, "r") as f:
+        verify_config = json.load(f)
+else:
+    verify_config = {}
+
+def save_config():
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(verify_config, f, indent=4)
+
+# ------------------- 認証ボタン -------------------
+class VerifyButton(discord.ui.View):
+    @discord.ui.button(label="認証する", style=discord.ButtonStyle.primary)
+    async def verify(self, interaction: discord.Interaction,button: discord.ui.Button):
+        guild_id = str(interaction.guild.id)
+
+        if guild_id not in verify_config:
+            return await interaction.response.send_message("❌ このサーバーでは認証設定がされていません。", ephemeral=True)
+
+        method = verify_config[guild_id]["method"]
+
+        await interaction.response.send_message("✅ DMを確認してください！", ephemeral=True)
+
+        try:
+            dm = await interaction.user.create_dm()
+
+            if method == "image":
+                code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+                await dm.send(f"🖼 **画像認証**\n以下のコードを入力してください:\n```\n{code}\n```")
+            else:
+                a, b = random.randint(1, 9), random.randint(1,9)
+                code = str(a + b)
+                await dm.send(f"🧮 **計算認証**\n以下を答えてください:\n```\n{a} + {b} = ?\n```")
+
+            def check(m):
+                return m.author == interaction.user and m.channel == dm
+
+            response = await bot.wait_for("message", check=check, timeout=60)
+
+            if response.content.strip() == code:
+                role = interaction.guild.get_role(verify_config[guild_id]["role_id"])
+                await interaction.user.add_roles(role)
+                await dm.send("✅ 認証成功！ロールが付与されました！")
+            else:
+                await dm.send("❌ 認証失敗しました。")
+
+        except discord.Forbidden:
+            await interaction.response.send_message("❌ DMが拒>
+
+@bot.tree.command(name="verifysetup", description="認証設定を行い、認証ボタンを設置します")
+@app_commands.describe(role="認証成功時に付与するロール", method="認証方式 (image / calc)")
+async def verifysetup(interaction: discord.Interaction, role: discord.Role, method: str):
+    if method not in ["image", "calc"]:
+        return await interaction.response.send_message("認証方法は `image` または `calc` を指定してください。", ephemeral=True)
+
+    verify_config[str(interaction.guild.id)] = {
+        "role_id": role.id,
+        "method": method
+    }
+    save_config()
 
     embed = discord.Embed(
         title="🔐 認証が必要です",
-        description="下の **認証する** ボタンを押して、サーバーに参加してください。",
-        color=discord.Color.green()
+        description="下のボタンを押して認証を完了してください",
+        color=0x00bfff
     )
+    embed.add_field(name="付与ロール", value=role.mention, inline=False)
+    embed.add_field(name="認証方式", value="🖼 画像認証" if method == "image" else "🧮 計算認証", inline=False)
 
-    await interaction.response.send_message("✅ 認証メッセージを送信しました！", ephemeral=True)
+    await interaction.response.send_message("✅ 設定完了！認証しました", ephemeral=True)
     await interaction.channel.send(embed=embed, view=VerifyButton())
